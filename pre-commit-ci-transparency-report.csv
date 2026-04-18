@@ -1,0 +1,14 @@
+Field,Value
+App Name,pre-commit ci
+Listing Type,App
+Developer,pre-commit.ci
+Publisher 2FA Required,Yes - Publisher organization requires 2FA
+Company Domain,pre-commit.ci
+Business Address or PO Box,"pre-commit ci, LLC 1244 Wooley Road Oxford, MI 48371 United States"
+EU Trader,Yes - Classifies as a trader in the European Union
+Required Permissions,write:code; read:issues; read:merge_queues; read:metadata; write:pull_requests; write:commit_statuses; write:workflows
+Repository Visibility,private
+Third-party Services,None
+Support URL,https://pre-commit.ci
+Privacy Policy URL,https://pre-commit.ci/privacy_policy.html
+Business ID,ein: 86-3244019
