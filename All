@@ -1,0 +1,311 @@
+pre-commit
+
+A framework for managing and maintaining multi-language pre-commit hooks.
+
+ 
+
+ Star15,168
+
+Introduction
+
+Git hook scripts are useful for identifying simple issues before submission to code review. We run our hooks on every commit to automatically point out issues in code such as missing semicolons, trailing whitespace, and debug statements. By pointing these issues out before code review, this allows a code reviewer to focus on the architecture of a change while not wasting time with trivial style nitpicks.
+
+As we created more libraries and projects we recognized that sharing our pre-commit hooks across projects is painful. We copied and pasted unwieldy bash scripts from project to project and had to manually change the hooks to work for different project structures.
+
+We believe that you should always use the best industry standard linters. Some of the best linters are written in languages that you do not use in your project or have installed on your machine. For example scss-lint is a linter for SCSS written in Ruby. If you’re writing a project in node you should be able to use scss-lint as a pre-commit hook without adding a Gemfile to your project or understanding how to get scss-lint installed.
+
+We built pre-commit to solve our hook issues. It is a multi-language package manager for pre-commit hooks. You specify a list of hooks you want and pre-commit manages the installation and execution of any hook written in any language before every commit. pre-commit is specifically designed to not require root access. If one of your developers doesn’t have node installed but modifies a JavaScript file, pre-commit automatically handles downloading and building node to run eslint without root.
+
+Installation
+
+Before you can run hooks, you need to have the pre-commit package manager installed.
+
+Using pip:
+
+pip install pre-commit 
+
+In a python project, add the following to your requirements.txt (or requirements-dev.txt):
+
+pre-commit 
+
+As a 0-dependency zipapp:
+
+locate and download the .pyz file from the github releasesrun python pre-commit-#.#.#.pyz ... in place of pre-commit ...Quick start1. Install pre-commitfollow the install instructions abovepre-commit --version should show you what version you're using
+
+$ pre-commit --version pre-commit 4.5.1 
+
+2. Add a pre-commit configurationcreate a file named .pre-commit-config.yamlyou can generate a very basic configuration using pre-commit sample-configthe full set of options for the configuration are listed belowthis example uses a formatter for python code, however pre-commit works for any programming languageother supported hooks are available
+
+repos: - repo: https://github.com/pre-commit/pre-commit-hooks rev: v2.3.0 hooks: - id: check-yaml - id: end-of-file-fixer - id: trailing-whitespace - repo: https://github.com/psf/black rev: 22.10.0 hooks: - id: black 
+
+3. Install the git hook scriptsrun pre-commit install to set up the git hook scripts
+
+$ pre-commit install pre-commit installed at .git/hooks/pre-commit 
+
+now pre-commit will run automatically on git commit!4. (optional) Run against all the filesit's usually a good idea to run the hooks against all of the files when adding new hooks (usually pre-commit will only run on the changed files during git hooks)
+
+$ pre-commit run --all-files [INFO] Initializing environment for https://github.com/pre-commit/pre-commit-hooks. [INFO] Initializing environment for https://github.com/psf/black. [INFO] Installing environment for https://github.com/pre-commit/pre-commit-hooks. [INFO] Once installed this environment will be reused. [INFO] This may take a few minutes... [INFO] Installing environment for https://github.com/psf/black. [INFO] Once installed this environment will be reused. [INFO] This may take a few minutes... Check Yaml...............................................................Passed Fix End of Files.........................................................Passed Trim Trailing Whitespace.................................................Failed - hook id: trailing-whitespace - exit code: 1 Files were modified by this hook. Additional output: Fixing sample.py black....................................................................Passed 
+
+oops! looks like I had some trailing whitespaceconsider running that in CI too
+
+Adding pre-commit plugins to your project
+
+Once you have pre-commit installed, adding pre-commit plugins to your project is done with the .pre-commit-config.yaml configuration file.
+
+Add a file called .pre-commit-config.yaml to the root of your project. The pre-commit config file describes what repositories and hooks are installed.
+
+.pre-commit-config.yaml - top level
+
+repos
+
+A list of repository mappings.
+
+default_install_hook_types
+
+(optional: default [pre-commit]) a list of --hook-types which will be used by default when running pre-commit install.
+
+default_language_version
+
+(optional: default {}) a mapping from language to the default language_version that should be used for that language. This will only override individual hooks that do not set language_version.
+
+For example to use python3.7 for language: python hooks:
+
+default_language_version: python: python3.7 
+
+default_stages
+
+(optional: default (all stages)) a configuration-wide default for the stages property of hooks. This will only override individual hooks that do not set stages.
+
+For example:
+
+default_stages: [pre-commit, pre-push] 
+
+files
+
+(optional: default '') global file include pattern.
+
+exclude
+
+(optional: default ^$) global file exclude pattern.
+
+fail_fast
+
+(optional: default false) set to true to have pre-commit stop running hooks after the first failure.
+
+minimum_pre_commit_version
+
+(optional: default '0') require a minimum version of pre-commit.
+
+A sample top-level:
+
+exclude: '^$' fail_fast: false repos: - ... 
+
+.pre-commit-config.yaml - repos
+
+The repository mapping tells pre-commit where to get the code for the hook from.
+
+repo
+
+the repository url to git clone from or one of the special sentinel values: local, meta.
+
+rev
+
+the revision or tag to clone at.
+
+hooks
+
+A list of hook mappings.
+
+A sample repository:
+
+repos: - repo: https://github.com/pre-commit/pre-commit-hooks rev: v1.2.3 hooks: - ... 
+
+.pre-commit-config.yaml - hooks
+
+The hook mapping configures which hook from the repository is used and allows for customization. All optional keys will receive their default from the repository's configuration.
+
+id
+
+which hook from the repository to use.
+
+alias
+
+(optional) allows the hook to be referenced using an additional id when using pre-commit run <hookid>.
+
+name
+
+(optional) override the name of the hook - shown during hook execution.
+
+language_version
+
+(optional) override the language version for the hook. See Overriding Language Version.
+
+files
+
+(optional) override the default pattern for files to run on.
+
+exclude
+
+(optional) file exclude pattern.
+
+types
+
+(optional) override the default file types to run on (AND). See Filtering files with types.
+
+types_or
+
+(optional) override the default file types to run on (OR). See Filtering files with types.
+
+exclude_types
+
+(optional) file types to exclude.
+
+args
+
+(optional) list of additional parameters to pass to the hook.
+
+stages
+
+(optional) selects which git hook(s) to run for. See Confining hooks to run at certain stages.
+
+additional_dependencies
+
+(optional) a list of dependencies that will be installed in the environment where this hook gets run. One useful application is to install plugins for hooks such as eslint.
+
+always_run
+
+(optional) if true, this hook will run even if there are no matching files.
+
+verbose
+
+(optional) if true, forces the output of the hook to be printed even when the hook passes.
+
+log_file
+
+(optional) if present, the hook output will additionally be written to a file when the hook fails or verbose is true.
+
+One example of a complete configuration:
+
+repos: - repo: https://github.com/pre-commit/pre-commit-hooks rev: v1.2.3 hooks: - id: trailing-whitespace 
+
+This configuration says to download the pre-commit-hooks project and run its trailing-whitespace hook.
+
+Updating hooks automatically
+
+You can update your hooks to the latest version automatically by running pre-commit autoupdate. By default, this will bring the hooks to the latest tag on the default branch.
+
+Usage
+
+Run pre-commit install to install pre-commit into your git hooks. pre-commit will now run on every commit. Every time you clone a project using pre-commit running pre-commit install should always be the first thing you do.
+
+If you want to manually run all pre-commit hooks on a repository, run pre-commit run --all-files. To run individual hooks use pre-commit run <hook_id>.
+
+The first time pre-commit runs on a file it will automatically download, install, and run the hook. Note that running a hook for the first time may be slow. For example: If the machine does not have node installed, pre-commit will download and build a copy of node.
+
+$ pre-commit install pre-commit installed at /home/asottile/workspace/pytest/.git/hooks/pre-commit $ git commit -m "Add super awesome feature" black....................................................................Passed blacken-docs.........................................(no files to check)Skipped Trim Trailing Whitespace.................................................Passed Fix End of Files.........................................................Passed Check Yaml...........................................(no files to check)Skipped Debug Statements (Python)................................................Passed Flake8...................................................................Passed Reorder python imports...................................................Passed pyupgrade................................................................Passed rst ``code`` is two backticks........................(no files to check)Skipped rst..................................................(no files to check)Skipped changelog filenames..................................(no files to check)Skipped [main 146c6c2c] Add super awesome feature 1 file changed, 1 insertion(+) 
+
+Creating new hooks
+
+pre-commit currently supports hooks written in many languages. As long as your git repo is an installable package (gem, npm, pypi, etc.) or exposes an executable, it can be used with pre-commit. Each git repo can support as many languages/hooks as you want.
+
+new in 2.5.0: pre-commit sets the PRE_COMMIT=1 environment variable during hook execution.
+
+The hook must exit nonzero on failure or modify files.
+
+A git repo containing pre-commit plugins must contain a .pre-commit-hooks.yaml file that tells pre-commit:
+
+id
+
+the id of the hook - used in pre-commit-config.yaml.
+
+name
+
+the name of the hook - shown during hook execution.
+
+entry
+
+the entry point - the executable to run. entry can also contain arguments that will not be overridden such as entry: autopep8 -i.
+
+language
+
+the language of the hook - tells pre-commit how to install the hook.
+
+files
+
+(optional: default '') the pattern of files to run on.
+
+exclude
+
+(optional: default ^$) exclude files that were matched by files.
+
+types
+
+(optional: default [file]) list of file types to run on (AND). See Filtering files with types.
+
+types_or
+
+(optional: default []) list of file types to run on (OR). See Filtering files with types.
+
+exclude_types
+
+(optional: default []) the pattern of files to exclude.
+
+always_run
+
+(optional: default false) if true this hook will run even if there are no matching files.
+
+fail_fast
+
+(optional: default false) if true pre-commit will stop running hooks if this hook fails.
+
+verbose
+
+(optional: default false) if true, forces the output of the hook to be printed even when the hook passes.
+
+pass_filenames
+
+(optional: default true) if false no filenames will be passed to the hook.
+
+require_serial
+
+(optional: default false) if true this hook will execute using a single process instead of in parallel.
+
+description
+
+(optional: default '') description of the hook. used for metadata purposes only.
+
+language_version
+
+(optional: default default) see Overriding language version.
+
+minimum_pre_commit_version
+
+(optional: default '0') allows one to indicate a minimum compatible pre-commit version.
+
+args
+
+(optional: default []) list of additional parameters to pass to the hook.
+
+stages
+
+(optional: default (all stages)) selects which git hook(s) to run for. See Confining hooks to run at certain stages.
+
+For example:
+
+- id: trailing-whitespace name: Trim Trailing Whitespace description: This hook trims trailing whitespace. entry: trailing-whitespace-fixer language: python types: [text] 
+
+Developing hooks interactively
+
+Since the repo property of .pre-commit-config.yaml can refer to anything that git clone ... understands, it's often useful to point it at a local directory while developing hooks.
+
+pre-commit try-repo streamlines this process by enabling a quick way to try out a repository. Here's how one might work interactively:
+
+note: you may need to provide --commit-msg-filename when using this command with hook types prepare-commit-msg and commit-msg.
+
+a commit is not necessary to try-repo on a local directory. pre-commit will clone any tracked uncommitted changes.
+
+~/work/hook-repo $ git checkout origin/main -b feature # ... make some changes # In another terminal or tab ~/work/other-repo $ pre-commit try-repo ../hook-repo foo --verbose --all-files =============================================================================== Using config: =============================================================================== repos: - repo: ../hook-repo rev: 84f01ac09fcd8610824f9626a590b83cfae9bcbd hooks: - id: foo =============================================================================== [INFO] Initializing environment for ../hook-repo. Foo......................................................................Passed - hook id: foo - duration: 0.02s Hello from foo hook! 
+
+Supported languagescondacoursier
+
+
